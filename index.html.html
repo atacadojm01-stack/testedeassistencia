@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>SGT Diagnóstico Profissional</title>
+
+<style>
+    * { box-sizing: border-box; }
+
+    body {
+        margin: 0;
+        font-family: Arial, sans-serif;
+        background: #0e0e0e;
+        color: white;
+        text-align: center;
+        overflow-x: hidden;
+    }
+
+    header {
+        background: #0066ff;
+        padding: 16px;
+        font-size: 20px;
+        font-weight: bold;
+    }
+
+    .container {
+        padding: 15px;
+        max-width: 700px;
+        margin: auto;
+        padding-bottom: 50px;
+    }
+
+    button {
+        width: 100%;
+        padding: 14px;
+        margin: 6px 0;
+        border: none;
+        border-radius: 8px;
+        font-size: 16px;
+        background: #0066ff;
+        color: white;
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+
+    button:hover { background: #0052cc; }
+    button:disabled { background: #444; color: #888; cursor: not-allowed; }
+
+    .section {
+        background: #1b1b1b;
+        padding: 15px;
+        margin-top: 12px;
+        border-radius: 10px;
+    }
+
+    video { width: 100%; border-radius: 8px; background: #000; }
+
+    textarea {
+        width: 100%;
+        height: 200px;
+        background: #000;
+        color: #0f0;
+        padding: 10px;
+        border: 1px solid #333;
+        border-radius: 5px;
+        font-family: monospace;
+        font-size: 14px;
+    }
+
+    .error { color: #ff4d4d; font-weight: bold; }
+
+    /* Estilos do Teste de Touch (Tela Cheia) */
+    #touchOverlay {
+        display: none;
+        position: fixed;
+        top: 0; left: 0;
+        width: 100vw; height: 100vh;
+        background: #000;
+        z-index: 9999;
+        grid-template-columns: repeat(8, 1fr);
+        grid-template-rows: repeat(16, 1fr);
+    }
+    .touchCell { border: 1px solid #222; background: #300; touch-action: none; }
+    .touchCell.active { background: #0f0; border-color: #0f0; transition: background 0.1s; }
+    
+    #closeTouchBtn {
+        position: absolute;
+        top: 50%; left: 50%;
+        transform: translate(-50%, -50%);
+        width: auto; padding: 15px 30px;
+        background: red; font-weight: bold;
+        z-index: 10000; border-radius: 20px;
+        box-shadow: 0px 4px 15px rgba(0,0,0,0.8);
+    }
+
+    /* Estilos da Barra do Microfone */
+    .mic-bar-container {
+        width: 100%; height: 20px;
+        background: #333; border-radius: 10px;
+        overflow: hidden; margin-top: 10px;
+    }
+    #micBar { height: 100%; background: #0f0; width: 0%; transition: width 0.1s; }
+
+</style>
+</head>
+
+<body>
+
+<header>SGT Diagnóstico Profissional</header>
+
+<div class="container">
+    <div class="section">
+        <button onclick="testeTela()">Teste Tela / Dead Pixel</button>
+        <button onclick="testeTouch()">Teste Touchscreen (Tela Cheia)</button>
+        <button onclick="testeCamera()">Teste Câmera</button>
+        <button onclick="testeMicrofone()">Teste Microfone</button>
+        <button onclick="testeSom()">Teste Alto-falantes</button>
+        <button onclick="testeVibracao()">Teste Vibração</button>
+        <button onclick="testeSensores()">Teste Sensores</button>
+        <button onclick="testeGPS()">Teste GPS</button>
+        <button onclick="infoDispositivo()">Info do Dispositivo</button>
+        <button onclick="relatorio()">Gerar Relatório</button>
+    </div>
+
+    <div class="section" id="area">
+        Selecione um teste acima para começar.
+    </div>
+</div>
+
+<div id="touchOverlay"></div>
+
+<script>
+const area = document.getElementById("area");
+
+// Variáveis globais para gerenciar limpezas e evitar vazamento de memória/bateria
+let streamGlobal = null;
+let audioContextGlobal = null;
+let animFrameGlobal = null;
+let facingMode = "environment";
+
+// Função crucial: Limpa o teste anterior antes de abrir o próximo
+function limparTudo() {
+    area.innerHTML = "";
+    document.body.style.background = "#0e0e0e"; // Reseta a cor do teste de tela
+    
+    // Desliga a câmera/microfone ativos
+    if (streamGlobal) {
+        streamGlobal.getTracks().forEach(track => track.stop());
+        streamGlobal = null;
+    }
+    // Fecha o contexto de áudio
+    if (audioContextGlobal && audioContextGlobal.state !== "closed") {
+        audioContextGlobal.close();
+        audioContextGlobal = null;
+    }
+    // Cancela loops de animação
+    if (animFrameGlobal) {
+        cancelAnimationFrame(animFrameGlobal);
+        animFrameGlobal = null;
+    }
+    // Remove eventos globais de sensor para não sobrecarregar
+    window.removeEventListener("deviceorientation", handleOrientation);
+}
+
+/* =========================================
+   TELA
+========================================= */
+function testeTela() {
+    limparTudo();
+    let cores = ["white", "black", "red", "green", "blue", "#0e0e0e"];
+    let html = "<h3>Toque nas cores para procurar pixels mortos</h3>";
+    
+    cores.forEach(c => {
+        let label = c === "#0e0e0e" ? "Restaurar Fundo" : c.toUpperCase();
+        html += `<button onclick="document.body.style.background='${c}'" style="background:${c}; color:${c==='white'?'black':'white'}; border: 1px solid #444;">${label}</button>`;
+    });
+    area.innerHTML = html;
+}
+
+/* =========================================
+   TOUCHSCREEN (TELA CHEIA)
+========================================= */
+function testeTouch() {
+    limparTudo();
+    const overlay = document.getElementById("touchOverlay");
+    overlay.innerHTML = '<button id="closeTouchBtn" onclick="fecharTouch()">SAIR DO TESTE</button>';
+    overlay.style.display = "grid";
+
+    // Cria as células do grid preenchendo 100% da tela
+    for(let i = 0; i < 128; i++) { // 8 cols x 16 rows
+        let d = document.createElement("div");
+        d.className = "touchCell";
+        overlay.appendChild(d);
+    }
+
+    // Tenta colocar em tela cheia se suportado
+    if (document.documentElement.requestFullscreen) {
+        document.documentElement.requestFullscreen().catch(() => {});
+    }
+
+    overlay.addEventListener("touchmove", handleTouchMove, { passive: false });
+}
+
+function handleTouchMove(e) {
+    e.preventDefault(); // Impede que a tela role para baixo durante o teste
+    for(let i = 0; i < e.touches.length; i++) {
+        const x = e.touches[i].clientX;
+        const y = e.touches[i].clientY;
+        const elemento = document.elementFromPoint(x, y);
+        if(elemento && elemento.classList.contains("touchCell")) {
+            elemento.classList.add("active");
+        }
+    }
+}
+
+function fecharTouch() {
+    const overlay = document.getElementById("touchOverlay");
+    overlay.style.display = "none";
+    overlay.removeEventListener("touchmove", handleTouchMove);
+    if (document.exitFullscreen) {
+        document.exitFullscreen().catch(() => {});
+    }
+    area.innerHTML = "Teste de Touchscreen finalizado.";
+}
+
+/* =========================================
+   CÂMERA E FLASH
+========================================= */
+async function testeCamera() {
+    limparTudo();
+    area.innerHTML = `
+        <video id="video" autoplay playsinline></video>
+        <button onclick="trocarCamera()">Trocar Câmera</button>
+        <button onclick="testarFlash()">Testar Lanterna</button>
+    `;
+    iniciarCamera();
+}
+
+async function iniciarCamera() {
+    if (streamGlobal) {
+        streamGlobal.getTracks().forEach(t => t.stop());
+    }
+    try {
+        streamGlobal = await navigator.mediaDevices.getUserMedia({ 
+            video: { facingMode: facingMode } 
+        });
+        document.getElementById("video").srcObject = streamGlobal;
+    } catch (e) {
+        area.innerHTML = `<p class="error">Erro ao acessar câmera: ${e.message}<br>Verifique as permissões do navegador.</p>`;
+    }
+}
+
+function trocarCamera() {
+    facingMode = facingMode === "environment" ? "user" : "environment";
+    iniciarCamera();
+}
+
+async function testarFlash() {
+    if(!streamGlobal) return alert("Câmera não iniciada.");
+    const track = streamGlobal.getVideoTracks()[0];
+    const imageCapture = new ImageCapture(track);
+    
+    try {
+        const capabilities = track.getCapabilities();
+        if (capabilities.torch) {
+            // Alterna o estado do flash
+            const trackSettings = track.getSettings();
+            const torchState = !trackSettings.torch; 
+            await track.applyConstraints({ advanced: [{ torch: torchState }] });
+        } else {
+            alert("Lanterna não suportada por esta câmera no navegador.");
+        }
+    } catch (err) {
+        alert("Erro ao testar a lanterna: " + err.message);
+    }
+}
+
+/* =========================================
+   MICROFONE
+========================================= */
+async function testeMicrofone() {
+    limparTudo();
+    area.innerHTML = `
+        <h3>Fale algo próximo ao microfone</h3>
+        <div class="mic-bar-container"><div id="micBar"></div></div>
+        <h1 id="vol">0</h1>
+    `;
+
+    try {
+        streamGlobal = await navigator.mediaDevices.getUserMedia({ audio: true });
+        
+        // Compatibilidade com navegadores
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        audioContextGlobal = new AudioContext();
+        
+        const source = audioContextGlobal.createMediaStreamSource(streamGlobal);
+        const analyser = audioContextGlobal.createAnalyser();
+        analyser.fftSize = 256;
+        source.connect(analyser);
+
+        const dataArray = new Uint8Array(analyser.frequencyBinCount);
+
+        function updateMic() {
+            analyser.getByteFrequencyData(dataArray);
+            let soma = 0;
+            for(let i=0; i < dataArray.length; i++) { soma += dataArray[i]; }
+            let media = soma / dataArray.length;
+            
+            const volDisplay = document.getElementById("vol");
+            const micBar = document.getElementById("micBar");
+            
+            if(volDisplay && micBar) {
+                volDisplay.innerText = Math.round(media);
+                // Calcula a porcentagem para a barra (max 255)
+                micBar.style.width = Math.min(100, (media / 128) * 100) + "%";
+            }
+            animFrameGlobal = requestAnimationFrame(updateMic);
+        }
+        updateMic();
+
+    } catch(e) {
+        area.innerHTML = `<p class="error">Erro ao acessar microfone: ${e.message}</p>`;
+    }
+}
+
+/* =========================================
+   ALTO-FALANTES
+========================================= */
+function testeSom() {
+    limparTudo();
+    area.innerHTML = `
+        <h3>Teste Estéreo</h3>
+        <button onclick="tocarSom(-1)">Som Esquerdo</button>
+        <button onclick="tocarSom(1)">Som Direito</button>
+        <button onclick="tocarSom(0)">Som Centralizado</button>
+    `;
+}
+
+function tocarSom(panValue) {
+    if (audioContextGlobal && audioContextGlobal.state !== 'closed') {
+        audioContextGlobal.close();
+    }
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    audioContextGlobal = new AudioContext();
+
+    const osc = audioContextGlobal.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.value = 440; // Frequência A4
+
+    // Usa StereoPannerNode (padrão moderno)
+    if (audioContextGlobal.createStereoPanner) {
+        const panner = audioContextGlobal.createStereoPanner();
+        panner.pan.value = panValue;
+        osc.connect(panner).connect(audioContextGlobal.destination);
+    } else {
+        osc.connect(audioContextGlobal.destination); // Fallback para browsers muito antigos
+    }
+
+    osc.start();
+    // Para após 1 segundo
+    setTimeout(() => {
+        osc.stop();
+        if(audioContextGlobal) audioContextGlobal.close();
+    }, 1000);
+}
+
+/* =========================================
+   VIBRAÇÃO
+========================================= */
+function testeVibracao() {
+    limparTudo();
+    area.innerHTML = `
+        <h3>Teste de Vibração (Não funciona no iOS)</h3>
+        <button onclick="navigator.vibrate(200)">Vibração Curta</button>
+        <button onclick="navigator.vibrate([300, 100, 300, 100, 500])">Padrão SOS</button>
+    `;
+    if (!navigator.vibrate) {
+        area.innerHTML += "<p class='error'>Seu dispositivo ou navegador não suporta a API de Vibração.</p>";
+    }
+}
+
+/* =========================================
+   SENSORES (Acelerômetro / Giroscópio)
+========================================= */
+function testeSensores() {
+    limparTudo();
+    area.innerHTML = `
+        <h3>Movimente o dispositivo</h3>
+        <button onclick="iniciarSensores()">Autorizar Sensores (Obrigatório no iOS)</button>
+        <h2 id="sensorValores"></h2>
+    `;
+}
+
+function iniciarSensores() {
+    if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+        // Fluxo para iOS 13+
+        DeviceOrientationEvent.requestPermission()
+            .then(permissionState => {
+                if (permissionState === 'granted') {
+                    window.addEventListener("deviceorientation", handleOrientation);
+                } else {
+                    alert("Permissão para sensores negada.");
+                }
+            })
+            .catch(console.error);
+    } else {
+        // Fluxo para Android / outros
+        window.addEventListener("deviceorientation", handleOrientation);
+    }
+}
+
+function handleOrientation(e) {
+    const el = document.getElementById("sensorValores");
+    if(el) {
+        el.innerHTML = `
+            X (Frente/Trás): ${Math.round(e.beta)}°<br>
+            Y (Esquerda/Direita): ${Math.round(e.gamma)}°<br>
+            Z (Bússola): ${Math.round(e.alpha)}°
+        `;
+    }
+}
+
+/* =========================================
+   GPS
+========================================= */
+function testeGPS() {
+    limparTudo();
+    area.innerHTML = "<h3>Buscando localização... Aguarde.</h3>";
+
+    if (!navigator.geolocation) {
+        area.innerHTML = "<p class='error'>GPS não suportado neste navegador.</p>";
+        return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+        pos => {
+            area.innerHTML = `
+                <h3>Localização Encontrada</h3>
+                Latitude: ${pos.coords.latitude}<br>
+                Longitude: ${pos.coords.longitude}<br>
+                Precisão: ${Math.round(pos.coords.accuracy)} metros
+            `;
+        },
+        err => {
+            let msg = "Erro desconhecido";
+            if(err.code === 1) msg = "Permissão Negada pelo usuário.";
+            if(err.code === 2) msg = "Posição Indisponível (Sem sinal).";
+            if(err.code === 3) msg = "Tempo limite atingido.";
+            area.innerHTML = `<p class="error">Erro de GPS: ${msg}</p>`;
+        },
+        { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+    );
+}
+
+/* =========================================
+   INFORMAÇÕES DO DISPOSITIVO
+========================================= */
+function infoDispositivo() {
+    limparTudo();
+    const memo = navigator.deviceMemory ? navigator.deviceMemory + " GB" : "Desconhecido (API não suportada)";
+    const cpu = navigator.hardwareConcurrency ? navigator.hardwareConcurrency + " Cores" : "Desconhecido";
+    
+    area.innerHTML = `
+        <h3>Dados do Hardware/Navegador</h3>
+        <p style="text-align:left; font-size:14px; word-break: break-word;">
+            <strong>Memória RAM (Aprox.):</strong> ${memo}<br><br>
+            <strong>Processador:</strong> ${cpu}<br><br>
+            <strong>Plataforma:</strong> ${navigator.platform}<br><br>
+            <strong>User Agent:</strong> ${navigator.userAgent}
+        </p>
+    `;
+}
+
+/* =========================================
+   RELATÓRIO
+========================================= */
+function relatorio() {
+    limparTudo();
+    const dataHora = new Date().toLocaleString();
+    const texto = `=== RELATÓRIO SGT DIAGNÓSTICO ===
+Data/Hora: ${dataHora}
+Navegador: ${navigator.userAgent}
+
+[ ] Tela (Dead Pixels)
+[ ] Touchscreen
+[ ] Câmera e Lanterna
+[ ] Microfone
+[ ] Alto-falantes Estéreo
+[ ] Vibração
+[ ] Sensores de Movimento
+[ ] GPS
+
+Nota do Técnico: 
+-
+`;
+    area.innerHTML = `
+        <h3>Relatório para Cópia</h3>
+        <p>Preencha os dados e copie para sua OS.</p>
+        <textarea>${texto}</textarea>
+    `;
+}
+
+</script>
+</body>
+</html>
