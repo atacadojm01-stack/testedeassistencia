@@ -1,595 +1,387 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>SGT Diagnóstico PRO</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>SGT Diagnóstico PRO</title>
+    <style>
+        :root {
+            --primary: #007AFF;
+            --accent: #00C7BE;
+            --bg: #0A0A0C;
+            --card-bg: #1C1C1E;
+            --text: #FFFFFF;
+            --success: #34C759;
+            --danger: #FF3B30;
+            --warning: #FF9500;
+        }
 
-<style>
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
 
-*{
-box-sizing:border-box;
--webkit-tap-highlight-color:transparent;
-}
+        body {
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            text-align: center;
+            user-select: none;
+            overflow-x: hidden;
+        }
 
-body{
-margin:0;
-font-family:Arial,Helvetica,sans-serif;
-background:#0e0e0e;
-color:white;
-text-align:center;
-user-select:none;
-}
+        header {
+            background: rgba(28, 28, 30, 0.8);
+            backdrop-filter: blur(10px);
+            padding: 20px;
+            font-size: 22px;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            border-bottom: 1px solid #333;
+        }
 
-header{
-background:linear-gradient(135deg,#0066ff,#0044cc);
-padding:16px;
-font-size:20px;
-font-weight:bold;
-box-shadow:0 3px 10px rgba(0,0,0,0.5);
-}
+        .container {
+            max-width: 500px;
+            margin: auto;
+            padding: 20px;
+        }
 
-.container{
-max-width:800px;
-margin:auto;
-padding:15px;
-padding-bottom:60px;
-}
+        /* Status Card */
+        .status-card {
+            background: linear-gradient(145deg, #2c2c2e, #1c1c1e);
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            border: 1px solid #333;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            text-align: left;
+        }
 
-.menu{
-display:grid;
-grid-template-columns:1fr 1fr;
-gap:8px;
-margin-bottom:12px;
-}
+        .status-item {
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 4px 0;
+        }
 
-button{
-width:100%;
-padding:14px;
-border:none;
-border-radius:10px;
-font-size:15px;
-cursor:pointer;
-background:linear-gradient(135deg,#0066ff,#0044cc);
-color:white;
-box-shadow:0 3px 10px rgba(0,0,0,0.4);
-}
+        /* Menu Grid */
+        .menu-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-bottom: 30px;
+        }
 
-button:active{
-transform:scale(.97);
-}
+        .card-btn {
+            background: var(--card-bg);
+            border: 1px solid #333;
+            border-radius: 18px;
+            padding: 20px 10px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            font-weight: 600;
+            font-size: 14px;
+        }
 
-.section{
-background:#1b1b1b;
-padding:15px;
-border-radius:12px;
-margin-top:10px;
-box-shadow:0 3px 10px rgba(0,0,0,0.5);
-}
+        .card-btn i {
+            font-size: 24px;
+            margin-bottom: 5px;
+            display: block;
+        }
 
-.progress{
-text-align:left;
-font-size:14px;
-line-height:22px;
-}
+        .card-btn:active {
+            transform: scale(0.95);
+            background: #2c2c2e;
+            border-color: var(--primary);
+        }
 
-.ok{color:#00ff88}
-.fail{color:#ff4444}
-.wait{color:#ffaa00}
+        /* Interactive Area */
+        .action-section {
+            background: var(--card-bg);
+            padding: 25px;
+            border-radius: 24px;
+            margin-top: 20px;
+            min-height: 150px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            border: 1px solid #333;
+        }
 
-video{
-width:100%;
-border-radius:10px;
-background:black;
-}
+        .btn-main {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 15px;
+            border-radius: 12px;
+            font-weight: bold;
+            margin: 5px 0;
+            width: 100%;
+        }
 
-textarea{
-width:100%;
-height:200px;
-background:#000;
-color:#0f0;
-padding:10px;
-border:1px solid #333;
-border-radius:6px;
-font-family:monospace;
-}
+        .btn-fail { background: var(--danger); }
+        .btn-success { background: var(--success); }
 
-#touchOverlay{
-display:none;
-position:fixed;
-top:0;
-left:0;
-width:100vw;
-height:100vh;
-background:black;
-z-index:9999;
-grid-template-columns:repeat(8,1fr);
-grid-template-rows:repeat(16,1fr);
-}
+        /* Helpers */
+        .ok { color: var(--success); font-weight: bold; }
+        .fail { color: var(--danger); font-weight: bold; }
+        .wait { color: var(--warning); opacity: 0.7; }
 
-.touchCell{
-border:1px solid #222;
-background:#300;
-touch-action:none;
-}
+        #touchOverlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: black; z-index: 9999; grid-template-columns: repeat(8,1fr); grid-template-rows: repeat(16,1fr);
+        }
+        .touchCell { border: 0.1px solid #111; background: #1a0000; touch-action: none; }
+        .touchCell.active { background: var(--success); }
+        
+        #closeTouchBtn {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
+            background: var(--danger); color: white; border: none; padding: 20px 40px; border-radius: 50px; font-weight: 800;
+        }
 
-.touchCell.active{
-background:#0f0;
-}
+        .mic-container {
+            width: 100%; height: 12px; background: #333; border-radius: 6px; overflow: hidden; margin: 15px 0;
+        }
+        #micLevel { height: 100%; background: var(--accent); width: 0%; transition: width 0.1s; }
 
-#closeTouchBtn{
-position:absolute;
-top:50%;
-left:50%;
-transform:translate(-50%,-50%);
-background:red;
-padding:15px 30px;
-border-radius:20px;
-font-weight:bold;
-}
-
-.micbar{
-height:20px;
-background:#333;
-border-radius:10px;
-overflow:hidden;
-margin-top:10px;
-}
-
-#micLevel{
-height:100%;
-background:#00ff88;
-width:0%;
-}
-
-</style>
+        video { width: 100%; border-radius: 15px; margin-bottom: 10px; }
+        textarea { 
+            width: 100%; height: 150px; background: #000; color: #0f0; border-radius: 10px; 
+            padding: 10px; font-family: monospace; border: 1px solid #333;
+        }
+    </style>
 </head>
-
 <body>
 
 <header>SGT Diagnóstico PRO</header>
 
 <div class="container">
+    <div class="status-card" id="progress">
+        </div>
 
-<div class="section progress" id="progress"></div>
+    <div class="menu-grid">
+        <div class="card-btn" onclick="testeTela()">📺 <span>Tela</span></div>
+        <div class="card-btn" onclick="testeTouch()">🖐️ <span>Touch</span></div>
+        <div class="card-btn" onclick="testeCamera()">📷 <span>Câmera</span></div>
+        <div class="card-btn" onclick="testeMicrofone()">🎤 <span>Mic</span></div>
+        <div class="card-btn" onclick="testeSom()">🔊 <span>Áudio</span></div>
+        <div class="card-btn" onclick="testeVibracao()">📳 <span>Vibrar</span></div>
+        <div class="card-btn" onclick="testeSensores()">🧭 <span>Sensor</span></div>
+        <div class="card-btn" onclick="testeGPS()">📍 <span>GPS</span></div>
+        <div class="card-btn" onclick="testeBateria()">🔋 <span>Bateria</span></div>
+        <div class="card-btn" onclick="infoDispositivo()">🛠️ <span>Hardware</span></div>
+    </div>
 
-<div class="menu">
+    <button class="btn-main" style="background: #333;" onclick="relatorio()">📄 Gerar Relatório Final</button>
 
-<button onclick="testeTela()">Tela</button>
-<button onclick="testeTouch()">Touch</button>
-
-<button onclick="testeCamera()">Câmera</button>
-<button onclick="testeMicrofone()">Microfone</button>
-
-<button onclick="testeSom()">Alto-falante</button>
-<button onclick="testeVibracao()">Vibração</button>
-
-<button onclick="testeSensores()">Sensores</button>
-<button onclick="testeGPS()">GPS</button>
-
-<button onclick="testeBateria()">Bateria</button>
-<button onclick="infoDispositivo()">Hardware</button>
-
-<button onclick="relatorio()">Relatório</button>
-
-</div>
-
-<div class="section" id="area">
-Selecione um teste para iniciar
-</div>
-
+    <div class="action-section" id="area">
+        <p style="opacity: 0.5;">Aguardando início dos testes...</p>
+    </div>
 </div>
 
 <div id="touchOverlay"></div>
 
 <script>
+const area = document.getElementById("area");
+const progress = document.getElementById("progress");
 
-const area=document.getElementById("area")
-const progress=document.getElementById("progress")
+let resultados = {
+    tela: "wait", touch: "wait", camera: "wait", mic: "wait",
+    som: "wait", vibracao: "wait", sensores: "wait", gps: "wait", bateria: "wait"
+};
 
-let resultados={
-tela:"wait",
-touch:"wait",
-camera:"wait",
-mic:"wait",
-som:"wait",
-vibracao:"wait",
-sensores:"wait",
-gps:"wait",
-bateria:"wait"
+let stream = null;
+let audioContext = null;
+let animFrame = null;
+
+function atualizarBarra() {
+    let html = "";
+    for (let k in resultados) {
+        let status = resultados[k];
+        let icon = status === "ok" ? "✔" : (status === "fail" ? "✖" : "⏳");
+        let cls = status === "ok" ? "ok" : (status === "fail" ? "fail" : "wait");
+        html += `<div class="status-item ${cls}">${icon} ${k.toUpperCase()}</div>`;
+    }
+    progress.innerHTML = html;
+}
+atualizarBarra();
+
+function limpar() {
+    area.innerHTML = "";
+    if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
+    if (audioContext) { audioContext.close(); audioContext = null; }
+    if (animFrame) { cancelAnimationFrame(animFrame); }
 }
 
-let stream=null
-let audioContext=null
-let animFrame=null
+function voltar() { area.innerHTML = `<p style="opacity:0.5">Teste concluído. Selecione outro.</p>`; }
 
-function atualizarBarra(){
-
-let html=""
-
-for(let k in resultados){
-
-let status=resultados[k]
-
-let label=k.toUpperCase()
-
-if(status==="ok")
-html+=`✔ ${label} <span class="ok">OK</span><br>`
-
-else if(status==="fail")
-html+=`✖ ${label} <span class="fail">Falha</span><br>`
-
-else
-html+=`⏳ ${label} <span class="wait">Pendente</span><br>`
-
+function marcar(teste, status) {
+    resultados[teste] = status;
+    atualizarBarra();
 }
 
-progress.innerHTML=html
+// --- TESTES ---
+
+function testeTela() {
+    limpar();
+    let cores = ["white", "black", "red", "green", "blue"];
+    let html = "<h4>Toque nas cores e verifique o LCD</h4><div style='display:flex;gap:5px;margin-bottom:15px'>";
+    cores.forEach(c => {
+        html += `<div onclick="document.body.style.background='${c}'" style="background:${c};flex:1;height:50px;border-radius:8px;border:1px solid #555"></div>`;
+    });
+    html += `</div><button class='btn-main' onclick="document.body.style.background='#0a0a0c'">Reset Cor</button>
+             <button class='btn-main btn-success' onclick="marcar('tela','ok');voltar()">TELA OK</button>
+             <button class='btn-main btn-fail' onclick="marcar('tela','fail');voltar()">FALHA</button>`;
+    area.innerHTML = html;
 }
 
-atualizarBarra()
-
-function limpar(){
-
-area.innerHTML=""
-
-if(stream){
-stream.getTracks().forEach(t=>t.stop())
-stream=null
+function testeTouch() {
+    limpar();
+    const overlay = document.getElementById("touchOverlay");
+    overlay.innerHTML = '<button id="closeTouchBtn" onclick="fecharTouch()">FINALIZAR</button>';
+    overlay.style.display = "grid";
+    for (let i = 0; i < 128; i++) {
+        let d = document.createElement("div");
+        d.className = "touchCell";
+        overlay.appendChild(d);
+    }
+    overlay.addEventListener("touchstart", handleTouch);
+    overlay.addEventListener("touchmove", handleTouch, {passive: false});
 }
 
-if(audioContext){
-audioContext.close()
-audioContext=null
+function handleTouch(e) {
+    e.preventDefault();
+    for (let i = 0; i < e.touches.length; i++) {
+        let el = document.elementFromPoint(e.touches[i].clientX, e.touches[i].clientY);
+        if (el && el.classList.contains("touchCell")) el.classList.add("active");
+    }
 }
 
-if(animFrame){
-cancelAnimationFrame(animFrame)
+function fecharTouch() {
+    document.getElementById("touchOverlay").style.display = "none";
+    area.innerHTML = `<h4>O desenho preencheu a tela corretamente?</h4>
+        <button class='btn-main btn-success' onclick="marcar('touch','ok');voltar()">TOUCH OK</button>
+        <button class='btn-main btn-fail' onclick="marcar('touch','fail');voltar()">FALHA</button>`;
 }
 
+async function testeCamera() {
+    limpar();
+    area.innerHTML = `<video id="video" autoplay playsinline></video>
+        <button class='btn-main btn-success' onclick="marcar('camera','ok');voltar()">CÂMERA OK</button>
+        <button class='btn-main btn-fail' onclick="marcar('camera','fail');voltar()">FALHA</button>`;
+    try {
+        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+        document.getElementById("video").srcObject = stream;
+    } catch (e) { area.innerHTML = "Erro ao acessar câmera."; }
 }
 
-function voltar(){
-
-area.innerHTML="Selecione outro teste"
-
+async function testeMicrofone() {
+    limpar();
+    area.innerHTML = `<h4>Fale ou assopre o microfone</h4><div class="mic-container"><div id="micLevel"></div></div>
+        <button class='btn-main btn-success' onclick="marcar('mic','ok');voltar()">MIC OK</button>
+        <button class='btn-main btn-fail' onclick="marcar('mic','fail');voltar()">FALHA</button>`;
+    try {
+        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        audioContext = new AudioContext();
+        const source = audioContext.createMediaStreamSource(stream);
+        const analyser = audioContext.createAnalyser();
+        source.connect(analyser);
+        const data = new Uint8Array(analyser.frequencyBinCount);
+        function loop() {
+            analyser.getByteFrequencyData(data);
+            let avg = data.reduce((a, b) => a + b) / data.length;
+            document.getElementById("micLevel").style.width = Math.min(avg * 2, 100) + "%";
+            animFrame = requestAnimationFrame(loop);
+        }
+        loop();
+    } catch (e) { area.innerHTML = "Erro microfone."; }
 }
 
-function marcar(teste,status){
-
-resultados[teste]=status
-atualizarBarra()
-
+function testeSom() {
+    limpar();
+    area.innerHTML = `<h4>Teste de frequência (440Hz)</h4><button class='btn-main' onclick="tocar(440)">🔊 EMITIR SOM</button>
+        <button class='btn-main btn-success' onclick="marcar('som','ok');voltar()">OK</button>
+        <button class='btn-main btn-fail' onclick="marcar('som','fail');voltar()">FALHA</button>`;
 }
 
-function testeTela(){
-
-limpar()
-
-let cores=["white","black","red","green","blue"]
-
-let html="<h3>Procure pixels mortos</h3>"
-
-cores.forEach(c=>{
-
-html+=`<button style="background:${c};color:${c=="white"?"black":"white"}"
-onclick="document.body.style.background='${c}'">${c}</button>`
-
-})
-
-html+=`
-<button onclick="document.body.style.background='#0e0e0e'">Restaurar</button>
-
-<button onclick="marcar('tela','ok');voltar()">Tela OK</button>
-<button onclick="marcar('tela','fail');voltar()">Falha</button>
-`
-
-area.innerHTML=html
-
+function tocar(f) {
+    let ctx = new AudioContext();
+    let o = ctx.createOscillator();
+    o.connect(ctx.destination);
+    o.start();
+    setTimeout(() => { o.stop(); ctx.close(); }, 800);
 }
 
-function testeTouch(){
-
-limpar()
-
-const overlay=document.getElementById("touchOverlay")
-
-overlay.innerHTML='<button id="closeTouchBtn" onclick="fecharTouch()">SAIR</button>'
-
-overlay.style.display="grid"
-
-for(let i=0;i<128;i++){
-
-let d=document.createElement("div")
-d.className="touchCell"
-overlay.appendChild(d)
-
+function testeVibracao() {
+    limpar();
+    area.innerHTML = `<h4>Teste de Motor</h4><button class='btn-main' onclick="navigator.vibrate(500)">📳 VIBRAR</button>
+        <button class='btn-main btn-success' onclick="marcar('vibracao','ok');voltar()">VIBRAR OK</button>
+        <button class='btn-main btn-fail' onclick="marcar('vibracao','fail');voltar()">FALHA</button>`;
 }
 
-overlay.addEventListener("touchmove",handleTouch,{passive:false})
-
+function testeSensores() {
+    limpar();
+    area.innerHTML = `<h4>Giroscópio/Acelerômetro</h4><p id="sens">Mova o aparelho...</p>
+        <button class='btn-main btn-success' onclick="marcar('sensores','ok');voltar()">OK</button>`;
+    window.addEventListener("deviceorientation", e => {
+        let el = document.getElementById("sens");
+        if(el) el.innerHTML = `X: ${Math.round(e.beta)} | Y: ${Math.round(e.gamma)}`;
+    });
 }
 
-function handleTouch(e){
-
-e.preventDefault()
-
-for(let i=0;i<e.touches.length;i++){
-
-let x=e.touches[i].clientX
-let y=e.touches[i].clientY
-
-let el=document.elementFromPoint(x,y)
-
-if(el&&el.classList.contains("touchCell"))
-el.classList.add("active")
-
+function testeGPS() {
+    limpar();
+    area.innerHTML = "Localizando...";
+    navigator.geolocation.getCurrentPosition(p => {
+        area.innerHTML = `<h4>GPS Ativo</h4><p>Lat: ${p.coords.latitude.toFixed(4)}<br>Long: ${p.coords.longitude.toFixed(4)}</p>
+            <button class='btn-main btn-success' onclick="marcar('gps','ok');voltar()">GPS OK</button>`;
+    }, () => { area.innerHTML = "Erro ao obter GPS"; });
 }
 
+async function testeBateria() {
+    limpar();
+    if (!navigator.getBattery) { area.innerHTML = "Não suportado"; return; }
+    let b = await navigator.getBattery();
+    area.innerHTML = `<h4>Bateria</h4><p>Nível: ${Math.round(b.level * 100)}%<br>Estado: ${b.charging ? 'Carregando' : 'Descarregando'}</p>
+        <button class='btn-main btn-success' onclick="marcar('bateria','ok');voltar()">OK</button>`;
 }
 
-function fecharTouch(){
-
-const overlay=document.getElementById("touchOverlay")
-
-overlay.style.display="none"
-
-overlay.removeEventListener("touchmove",handleTouch)
-
-area.innerHTML=`
-<button onclick="marcar('touch','ok');voltar()">Touch OK</button>
-<button onclick="marcar('touch','fail');voltar()">Falha</button>
-`
-
+function infoDispositivo() {
+    limpar();
+    area.innerHTML = `<h4>Info Hardware</h4><p style="text-align:left; font-size:12px">
+        RAM: ${navigator.deviceMemory || '?'}GB<br>CPUs: ${navigator.hardwareConcurrency}<br>
+        Plat: ${navigator.platform}<br>UA: ${navigator.userAgent.substring(0,60)}...</p>
+        <button class='btn-main' onclick="voltar()">FECHAR</button>`;
 }
 
-async function testeCamera(){
-
-limpar()
-
-area.innerHTML=`
-<video id="video" autoplay playsinline></video>
-
-<button onclick="marcar('camera','ok');voltar()">Camera OK</button>
-<button onclick="marcar('camera','fail');voltar()">Falha</button>
-`
-
-try{
-
-stream=await navigator.mediaDevices.getUserMedia({video:true})
-
-document.getElementById("video").srcObject=stream
-
-}catch{
-
-area.innerHTML="Erro câmera"
-
+function relatorio() {
+    limpar();
+    let txt = "=== RELATÓRIO SGT DIAGNÓSTICO ===\n";
+    for (let k in resultados) txt += `${k.toUpperCase()}: ${resultados[k]}\n`;
+    txt += `DATA: ${new Date().toLocaleString()}`;
+    area.innerHTML = `<h4>Relatório Gerado</h4><textarea id="rep">${txt}</textarea>
+        <button class='btn-main btn-success' onclick="copiar()">COPIAR TEXTO</button>`;
 }
 
+function copiar() {
+    let t = document.getElementById("rep");
+    t.select();
+    document.execCommand("copy");
+    alert("Copiado com sucesso!");
 }
-
-async function testeMicrofone(){
-
-limpar()
-
-area.innerHTML=`
-<h3>Fale no microfone</h3>
-<div class="micbar"><div id="micLevel"></div></div>
-
-<button onclick="marcar('mic','ok');voltar()">Microfone OK</button>
-<button onclick="marcar('mic','fail');voltar()">Falha</button>
-`
-
-stream=await navigator.mediaDevices.getUserMedia({audio:true})
-
-audioContext=new AudioContext()
-
-const source=audioContext.createMediaStreamSource(stream)
-
-const analyser=audioContext.createAnalyser()
-
-source.connect(analyser)
-
-const data=new Uint8Array(analyser.frequencyBinCount)
-
-function loop(){
-
-analyser.getByteFrequencyData(data)
-
-let soma=0
-
-for(let i=0;i<data.length;i++) soma+=data[i]
-
-let media=soma/data.length
-
-document.getElementById("micLevel").style.width=(media/128*100)+"%"
-
-animFrame=requestAnimationFrame(loop)
-
-}
-
-loop()
-
-}
-
-function testeSom(){
-
-limpar()
-
-area.innerHTML=`
-<h3>Teste Som</h3>
-
-<button onclick="tocar(440)">Som</button>
-
-<button onclick="marcar('som','ok');voltar()">OK</button>
-<button onclick="marcar('som','fail');voltar()">Falha</button>
-`
-
-}
-
-function tocar(freq){
-
-audioContext=new AudioContext()
-
-let osc=audioContext.createOscillator()
-
-osc.frequency.value=freq
-
-osc.connect(audioContext.destination)
-
-osc.start()
-
-setTimeout(()=>{
-
-osc.stop()
-audioContext.close()
-
-},1000)
-
-}
-
-function testeVibracao(){
-
-limpar()
-
-area.innerHTML=`
-<h3>Vibração</h3>
-
-<button onclick="navigator.vibrate(300)">Vibrar</button>
-
-<button onclick="marcar('vibracao','ok');voltar()">OK</button>
-<button onclick="marcar('vibracao','fail');voltar()">Falha</button>
-`
-
-}
-
-function testeSensores(){
-
-limpar()
-
-area.innerHTML=`
-<h3>Movimente o celular</h3>
-<h2 id="sens"></h2>
-
-<button onclick="marcar('sensores','ok');voltar()">OK</button>
-<button onclick="marcar('sensores','fail');voltar()">Falha</button>
-`
-
-window.addEventListener("deviceorientation",e=>{
-
-document.getElementById("sens").innerHTML=
-`X ${Math.round(e.beta)}<br>Y ${Math.round(e.gamma)}<br>Z ${Math.round(e.alpha)}`
-
-})
-
-}
-
-function testeGPS(){
-
-limpar()
-
-area.innerHTML="Buscando GPS..."
-
-navigator.geolocation.getCurrentPosition(p=>{
-
-area.innerHTML=`
-Lat ${p.coords.latitude}<br>
-Lon ${p.coords.longitude}<br>
-
-<button onclick="marcar('gps','ok');voltar()">OK</button>
-<button onclick="marcar('gps','fail');voltar()">Falha</button>
-`
-
-})
-
-}
-
-async function testeBateria(){
-
-limpar()
-
-if(!navigator.getBattery){
-
-area.innerHTML="API bateria não suportada"
-return
-
-}
-
-let b=await navigator.getBattery()
-
-area.innerHTML=`
-<h3>Bateria</h3>
-
-Nível: ${Math.round(b.level*100)}%<br>
-Carregando: ${b.charging}
-
-<br><br>
-
-<button onclick="marcar('bateria','ok');voltar()">OK</button>
-<button onclick="marcar('bateria','fail');voltar()">Falha</button>
-`
-
-}
-
-function infoDispositivo(){
-
-limpar()
-
-area.innerHTML=`
-<h3>Hardware</h3>
-
-RAM: ${navigator.deviceMemory||"?"} GB<br>
-CPU: ${navigator.hardwareConcurrency||"?"} cores<br>
-
-Plataforma:<br>
-${navigator.platform}
-
-<br><br>
-
-UserAgent:<br>
-
-${navigator.userAgent}
-
-`
-
-}
-
-function relatorio(){
-
-limpar()
-
-let texto="=== RELATÓRIO SGT ===\n\n"
-
-for(let k in resultados){
-
-texto+=k.toUpperCase()+" : "+resultados[k]+"\n"
-
-}
-
-texto+=`\nData: ${new Date().toLocaleString()}\n`
-
-area.innerHTML=`
-<h3>Relatório</h3>
-
-<textarea id="rep">${texto}</textarea>
-
-<button onclick="copiar()">Copiar</button>
-`
-
-}
-
-function copiar(){
-
-let t=document.getElementById("rep")
-
-t.select()
-
-document.execCommand("copy")
-
-alert("Copiado")
-
-}
-
 </script>
 
 </body>
